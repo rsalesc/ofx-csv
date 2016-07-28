@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 require 'rubygems'
-require 'ofx-parser'
+require_relative 'ofx-parser/lib/ofx-parser'
 require 'csv'
 
 ofx_path = ARGV.shift
