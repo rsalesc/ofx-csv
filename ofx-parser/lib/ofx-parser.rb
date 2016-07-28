@@ -8,6 +8,13 @@ require 'date'
   require File.dirname(__FILE__) + "/#{fn}"
 end
 
+$encodings = [
+  lambda {|ofx| ofx},
+  lambda {|ofx| ofx.encode("UTF-8", "iso-8859-1")},
+  lambda {|ofx| ofx.encode("UTF-8", "Windows-1252")},
+  lambda {|ofx| ofx.encode("UTF-16be", :invalid=>:replace, replace:'?').encode("UTF-8")}
+]
+
 module OfxParser
   VERSION = '1.1.0'
 
@@ -16,16 +23,22 @@ module OfxParser
     # Creates and returns an Ofx instance when given a well-formed OFX document,
     # complete with the mandatory key:pair header.
     def self.parse(ofx)
-      ofx = ofx.respond_to?(:read) ? ofx.read.to_s : ofx.to_s
-     # ofx = ofx.encode("UTF-16", :invalid=>:replace, replace:'').encode("UTF-8")
-      ofx = ofx.encode("UTF-16be", :invalid=>:replace, replace:'?').encode("UTF-8")
-      return Ofx.new if ofx == ""
+      ofx_content = ofx.respond_to?(:read) ? ofx.read.to_s : ofx.to_s
+      return Ofx.new if ofx_content == ""
 
-      header, body = pre_process(ofx)
+      $encodings.each do |f|
+        begin
+          header, body = pre_process(f.call(ofx_content))
 
-      ofx_out = parse_body(body)
-      ofx_out.header = header
-      ofx_out
+          ofx_out = parse_body(body)
+          ofx_out.header = header
+          return ofx_out
+        rescue
+          next
+        end
+      end
+
+      throw "No encoding has worked"
     end
 
     # Designed to make the main OFX body parsable. This means adding closing tags
