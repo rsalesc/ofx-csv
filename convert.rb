@@ -15,6 +15,7 @@ end
 date_format = "%d/%m/%Y"
 
 #p account
+$stdout.write("\xEF\xBB\xBF")
 puts "sep=,"
 puts [account.routing_number || "", account.number || "", account.balance || "", 
       account.balance_date.strftime(date_format) || ""].to_csv
